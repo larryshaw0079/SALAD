@@ -1,0 +1,24 @@
+protocolVersion: 2
+name: XiaoQinfeng_Template
+type: job
+jobRetryCount: 0
+prerequisites:
+  - type: dockerimage
+    uri: 'lin-ai-27:5000/xiaoqinfeng/pytorch'
+    name: docker_image_0
+taskRoles:
+  Task_role_1:
+    instances: 1
+    completion:
+      minFailedInstances: 1
+      minSucceededInstances: 1
+    dockerImage: docker_image_0
+    resourcePerInstance:
+      gpu: 1
+      cpu: 4
+      memoryMB: 8192
+    commands:
+      - 'echo Starting...'
+    taskRetryCount: 0
+defaults:
+  virtualCluster: default

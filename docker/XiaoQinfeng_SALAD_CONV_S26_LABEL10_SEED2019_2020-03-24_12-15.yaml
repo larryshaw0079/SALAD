@@ -1,0 +1,52 @@
+defaults:
+  virtualCluster: default
+jobRetryCount: 0
+name: XiaoQinfeng_SALAD_CONV_S26_LABEL10_SEED2019_2020-03-24_12-15
+prerequisites:
+- name: docker_image_0
+  type: dockerimage
+  uri: lin-ai-27:5000/xiaoqinfeng/pytorch
+protocolVersion: 2
+taskRoles:
+  Task_role_1:
+    commands:
+    - echo Starting...
+    - wget http://172.31.246.46:9999/data.tar
+    - wget http://172.31.246.46:9999/script.tar
+    - tar -xf data.tar
+    - tar -xf script.tar
+    - python3 train.py --category kpi --epochs 150 --batch 512 --contras --itimp --var
+      conv --data ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --label-portion
+      1.000000 --seed 2019
+    - python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data
+      ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --load 150 --label-portion
+      1.000000 --delay 7 --seed 2019
+    - python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data
+      ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --load 140 --label-portion
+      1.000000 --delay 7 --seed 2019
+    - python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data
+      ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --load 130 --label-portion
+      1.000000 --delay 7 --seed 2019
+    - python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data
+      ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --load 120 --label-portion
+      1.000000 --delay 7 --seed 2019
+    - python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data
+      ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --load 110 --label-portion
+      1.000000 --delay 7 --seed 2019
+    - python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data
+      ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --load 100 --label-portion
+      1.000000 --delay 7 --seed 2019
+    - python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data
+      ./data/kpi/series_27_f0932edd-6400-3e63-9559-0a9860a1baa9.csv --load 90 --label-portion
+      1.000000 --delay 7 --seed 2019
+    completion:
+      minFailedInstances: 1
+      minSucceededInstances: 1
+    dockerImage: docker_image_0
+    instances: 1
+    resourcePerInstance:
+      cpu: 4
+      gpu: 1
+      memoryMB: 8192
+    taskRetryCount: 0
+type: job
