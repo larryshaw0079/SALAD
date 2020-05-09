@@ -71,27 +71,27 @@ def console_highlight(input_string, font_color='', background_color='', flash=Fa
 
 def print_red_info(msg, thread=None):
     if thread is not None:
-        print(console_highlight('PROCESS[%d] > [INFO]: %s'%(thread, msg), 'red'))
+        print(console_highlight('PROCESS[%d] > [INFO]: %s' % (thread, msg), 'red'))
     else:
-        print(console_highlight('[INFO]: %s'%(msg), 'red'))
+        print(console_highlight('[INFO]: %s' % (msg), 'red'))
 
 
 def print_blue_info(msg, thread=None):
     if thread is not None:
-        print(console_highlight('PROCESS[%d] > [INFO]: %s'%(thread, msg), 'blue'))
+        print(console_highlight('PROCESS[%d] > [INFO]: %s' % (thread, msg), 'blue'))
     else:
-        print(console_highlight('[INFO]: %s'%(msg), 'blue'))
+        print(console_highlight('[INFO]: %s' % (msg), 'blue'))
 
 
 def print_green_info(msg, thread=None):
     if thread is not None:
-        print(console_highlight('PROCESS[%d] > [INFO]: %s'%(thread, msg), 'green'))
+        print(console_highlight('PROCESS[%d] > [INFO]: %s' % (thread, msg), 'green'))
     else:
-        print(console_highlight('[INFO]: %s'%(msg), 'green'))
+        print(console_highlight('[INFO]: %s' % (msg), 'green'))
 
 
 def print_purple_info(msg, thread=None):
     if thread is not None:
-        print(console_highlight('PROCESS[%d] > [INFO]: %s'%(thread, msg), 'purple'))
+        print(console_highlight('PROCESS[%d] > [INFO]: %s' % (thread, msg), 'purple'))
     else:
-        print(console_highlight('[INFO]: %s'%(msg), 'purple'))
+        print(console_highlight('[INFO]: %s' % (msg), 'purple'))

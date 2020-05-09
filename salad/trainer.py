@@ -64,7 +64,7 @@ class Trainer:
         z_hat = self.encoder(x + self.input_noise())
         z_prior = torch.randn_like(z_hat).cuda()
         latent_dis_loss = self.adversarial_criterion(self.latent_discriminator(z_hat),
-                                                self.label_fake) + self.adversarial_criterion(
+                                                     self.label_fake) + self.adversarial_criterion(
             self.latent_discriminator(z_prior), self.label_real)
 
         return latent_dis_loss

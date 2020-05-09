@@ -1,5 +1,5 @@
-import datetime
 import argparse
+import datetime
 
 import yaml
 
@@ -66,7 +66,8 @@ if __name__ == '__main__':
                 with open('docker/template.yaml', 'r') as f:
                     content = yaml.load(f, Loader=Loader)
 
-                content['name'] = 'XiaoQinfeng_SALAD_CONV_S%d_LABEL%s_SEED%d_%s'%(data, str(label)[0:3:2], seed, current_time)
+                content['name'] = 'XiaoQinfeng_SALAD_CONV_S%d_LABEL%s_SEED%d_%s' % (
+                    data, str(label)[0:3:2], seed, current_time)
                 print(content['name'])
                 content['taskRoles']['Task_role_1']['resourcePerInstance']['gpu'] = args.gpu
                 content['taskRoles']['Task_role_1']['resourcePerInstance']['cpu'] = args.cpu
@@ -77,9 +78,13 @@ if __name__ == '__main__':
                 content['taskRoles']['Task_role_1']['commands'].append(r'tar -xf data.tar')
                 content['taskRoles']['Task_role_1']['commands'].append(r'tar -xf script.tar')
 
-                content['taskRoles']['Task_role_1']['commands'].append(r'python3 train.py --category kpi --epochs 150 --batch 512 --contras --itimp --var conv --data %s --label-portion %f --seed %d'%(data_file_name, label, seed))
+                content['taskRoles']['Task_role_1']['commands'].append(
+                    r'python3 train.py --category kpi --epochs 150 --batch 512 --contras --itimp --var conv --data %s --label-portion %f --seed %d' % (
+                        data_file_name, label, seed))
                 for load_epoch in [150, 140, 130, 120, 110, 100, 90, 80, 70, 60, 50]:
-                    content['taskRoles']['Task_role_1']['commands'].append(r'python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data %s --load %d --label-portion %f --delay 7 --seed %d'%(data_file_name, load_epoch, label, seed))
+                    content['taskRoles']['Task_role_1']['commands'].append(
+                        r'python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data %s --load %d --label-portion %f --delay 7 --seed %d' % (
+                            data_file_name, load_epoch, label, seed))
 
-                with open('docker/%s.yaml'%(content['name']), 'w') as f:
-                        output = yaml.dump(content, f, Dumper=Dumper)
+                with open('docker/%s.yaml' % (content['name']), 'w') as f:
+                    output = yaml.dump(content, f, Dumper=Dumper)

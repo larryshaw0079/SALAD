@@ -119,4 +119,3 @@ def get_windowed_data(series, window_size, stride):
             break
         else:
             yield series[i: i + window_size]
-

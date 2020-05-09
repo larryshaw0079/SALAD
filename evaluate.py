@@ -1,21 +1,18 @@
-import os
 import argparse
-import pdb
+import os
 
 import numpy as np
-from tqdm import tqdm
-
 import torch
 import torch.nn as nn
-from torch.utils.data import DataLoader
-
 from salad.dataset import prepare_dataset, KPIBatchedWindowDataset
-from salad.metrics import modified_f1, modified_recall, modified_precision, modified_auc_score, range_lift_with_delay
+from salad.metrics import modified_f1, modified_recall, modified_precision
+from sklearn.metrics import precision_recall_curve, roc_auc_score, auc
+from torch.utils.data import DataLoader
+from tqdm import tqdm
+
+from salad.misc import print_blue_info
 from salad.model import DenseEncoder, DenseDecoder, ConvEncoder, ConvDecoder, DataDiscriminator, LatentDiscriminator
 from salad.trainer import Trainer
-from salad.misc import print_blue_info, print_red_info
-
-from sklearn.metrics import precision_recall_curve, roc_auc_score, auc
 
 
 ##########################################################################################
@@ -27,13 +24,16 @@ def arg_parse():
     # Dataset
     group_dataset = parser.add_argument_group('Dataset')
     group_dataset.add_argument("--data", dest='data_path', type=str,
-                        default='./data/kpi/series_0_05f10d3a-239c-3bef-9bdc-a2feeb0037aa.csv', help='The dataset path')
-    group_dataset.add_argument("--category", dest='data_category', choices=['kpi', 'nab', 'yahoo'], type=str, required=True)
+                               default='./data/kpi/series_0_05f10d3a-239c-3bef-9bdc-a2feeb0037aa.csv',
+                               help='The dataset path')
+    group_dataset.add_argument("--category", dest='data_category', choices=['kpi', 'nab', 'yahoo'], type=str,
+                               required=True)
     group_dataset.add_argument("--split", dest='train_val_test_split', type=tuple, default=(5, 2, 3),
-                        help='The ratio of train, validation, test dataset')
+                               help='The ratio of train, validation, test dataset')
     group_dataset.add_argument("--filling", dest='filling_method', choices=['zero', 'linear'], default='zero')
-    group_dataset.add_argument("--standardize", dest='standardization_method', choices=['standrad', 'minmax', 'negpos1'],
-                        default='negpos1')
+    group_dataset.add_argument("--standardize", dest='standardization_method',
+                               choices=['standrad', 'minmax', 'negpos1'],
+                               default='negpos1')
 
     # Model
     group_model = parser.add_argument_group('Model')
@@ -56,13 +56,14 @@ def arg_parse():
     group_training = parser.add_argument_group('Training')
     group_training.add_argument("--epochs", dest="epochs", type=int, default=100, help="The number of epochs to run")
     group_training.add_argument("--label-portion", dest="label_portion", type=float, default=0.0,
-                        help='The portion of labels used in training')
+                                help='The portion of labels used in training')
     group_training.add_argument("--batch", dest="batch_size", type=int, default=512, help="The batch size")
 
     # Detection
     group_detection = parser.add_argument_group('Detection')
     group_detection.add_argument("--delay", dest="delay", type=int, default=7, help='The delay of tolerance')
-    group_detection.add_argument("--threshold", type=float, default=None, help='The threshold for determining anomalies')
+    group_detection.add_argument("--threshold", type=float, default=None,
+                                 help='The threshold for determining anomalies')
 
     return parser.parse_args()
 
@@ -110,7 +111,7 @@ if __name__ == '__main__':
     data_discriminator = DataDiscriminator(args.window_size, args.hidden_size)
     latent_discriminator = LatentDiscriminator(args.hidden_size, args.latent_size)
 
-    check_point = torch.load(args.save_path + 'model_epoch_%d.ckpt'%args.load_epoch)
+    check_point = torch.load(args.save_path + 'model_epoch_%d.ckpt' % args.load_epoch)
     print_blue_info('Resume at epoch %d...' % check_point['epoch'])
     encoder.load_state_dict(check_point['encoder_state_dict'])
     decoder.load_state_dict(check_point['decoder_state_dict'])
@@ -160,6 +161,7 @@ if __name__ == '__main__':
         precisions = np.zeros_like(candidates)
         recalls = np.zeros_like(candidates)
 
+
         def calc_metric(th, num):
             y_res = np.zeros_like(y_pred)
             y_res[y_pred >= th] = 1.0
@@ -172,6 +174,7 @@ if __name__ == '__main__':
             f1s[num] = f1
             precisions[num] = precision
             recalls[num] = recall
+
 
         from threading import Thread
 
@@ -186,11 +189,11 @@ if __name__ == '__main__':
 
         best_f1_ind = np.argmax(f1s)
 
-        print_blue_info('Best F1: %f'%f1s[best_f1_ind])
-        print_blue_info('Precision: %f'%precisions[best_f1_ind])
-        print_blue_info('Recall: %f'%recalls[best_f1_ind])
-        print_blue_info('PR: %f'%pr_auc)
-        print_blue_info('ROC: %f'%roc_auc)
+        print_blue_info('Best F1: %f' % f1s[best_f1_ind])
+        print_blue_info('Precision: %f' % precisions[best_f1_ind])
+        print_blue_info('Recall: %f' % recalls[best_f1_ind])
+        print_blue_info('PR: %f' % pr_auc)
+        print_blue_info('ROC: %f' % roc_auc)
     else:
         y_pred[y_pred < args.threshold] = 0
         y_pred[y_pred >= args.threshold] = 1
