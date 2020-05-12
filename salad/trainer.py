@@ -11,7 +11,7 @@ class Trainer:
         self.latent_discriminator = latent_discriminator
 
         self.adversarial_criterion = torch.nn.BCEWithLogitsLoss()
-        self.reconstruction_criterion = torch.nn.L1Loss(reduction='none')
+        self.reconstruction_criterion = torch.nn.MSELoss(reduction='none')
 
         self.input_noise = lambda: (torch.randn(batch_size, window_size) * 0.01).cuda()
         self.label_real = torch.ones(batch_size, 1).cuda()

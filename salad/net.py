@@ -123,13 +123,53 @@ class DenseDecoder(nn.Module):
         return out
 
 
-class LatentDiscriminator(nn.Module):
-    def __init__(self, hidden_size, latent_size):
-        super(LatentDiscriminator, self).__init__()
+class ConvDiscriminator(nn.Module):
+    def __init__(self, input_size, input_channel):
+        super(ConvDiscriminator, self).__init__()
+        self.__dict__.update(locals())
+
+        self.layer_num = int(np.log2(input_size)) - 1
+        self.max_channel_num = input_size * 2
+        self.final_size = 1
+        self.conv_list = []
+
+        current_out_channel = None
+        for i in range(self.layer_num + 1):
+            current_out_channel = self.max_channel_num // 2 ** (self.layer_num - i)
+
+            if i == 0:
+                self.conv_list.append(nn.Conv1d(in_channels=self.input_channel, out_channels=current_out_channel,
+                                                kernel_size=4, stride=2, padding=1))
+            else:
+                self.conv_list.append(nn.Conv1d(in_channels=prev_channel, out_channels=current_out_channel,
+                                                kernel_size=4, stride=2, padding=1))
+                self.conv_list.append(nn.BatchNorm1d(current_out_channel))
+            self.conv_list.append(nn.LeakyReLU(0.2, inplace=True))
+            prev_channel = current_out_channel
+
+        self.conv_layers = nn.Sequential(*self.conv_list)
+
+        self.linear_layers = nn.Sequential(
+            nn.Linear(current_out_channel, 1)
+        )
+
+    def forward(self, x):
+        out = torch.unsqueeze(x, dim=1)
+        out = self.conv_layers(out)
+        # out = out.view(-1, self.final_size * self.max_channel_num)
+        out = out.view(out.size(0), -1)
+        out = self.linear_layers(out)
+
+        return out
+
+
+class DenseDiscriminator(nn.Module):
+    def __init__(self, input_size, hidden_size):
+        super(DenseDiscriminator, self).__init__()
         self.__dict__.update(locals())
 
         self.layers = nn.Sequential(
-            nn.Linear(latent_size, hidden_size),
+            nn.Linear(input_size, hidden_size),
             nn.BatchNorm1d(hidden_size),
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(hidden_size, hidden_size),
@@ -146,25 +186,25 @@ class LatentDiscriminator(nn.Module):
         return out
 
 
-class DataDiscriminator(nn.Module):
-    def __init__(self, data_size, hidden_size):
-        super(DataDiscriminator, self).__init__()
-        self.__dict__.update(locals())
-
-        self.layers = nn.Sequential(
-            nn.Linear(data_size, hidden_size),
-            nn.BatchNorm1d(hidden_size),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(hidden_size, hidden_size),
-            nn.BatchNorm1d(hidden_size),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(0.2),
-            nn.Linear(hidden_size, 1),
-            # nn.BatchNorm1d(1),
-            # nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        out = self.layers(x)
-
-        return out
+# class DataDiscriminator(nn.Module):
+#     def __init__(self, data_size, hidden_size):
+#         super(DataDiscriminator, self).__init__()
+#         self.__dict__.update(locals())
+#
+#         self.layers = nn.Sequential(
+#             nn.Linear(data_size, hidden_size),
+#             nn.BatchNorm1d(hidden_size),
+#             nn.LeakyReLU(0.2, inplace=True),
+#             nn.Linear(hidden_size, hidden_size),
+#             nn.BatchNorm1d(hidden_size),
+#             nn.LeakyReLU(0.2, inplace=True),
+#             nn.Dropout(0.2),
+#             nn.Linear(hidden_size, 1),
+#             # nn.BatchNorm1d(1),
+#             # nn.Sigmoid()
+#         )
+#
+#     def forward(self, x):
+#         out = self.layers(x)
+#
+#         return out

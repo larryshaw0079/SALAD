@@ -12,13 +12,13 @@ from torchts.dataset.repository import get_kpi_dataset, KPIDataset
 from torchts.evaluation.metrics import best_f1_with_delay, pr_auc_with_delay, roc_auc_with_delay
 from tqdm import tqdm
 
-from salad.model import DenseEncoder, DenseDecoder, ConvEncoder, ConvDecoder, DataDiscriminator, LatentDiscriminator
+from salad.net import DenseEncoder, DenseDecoder, ConvEncoder, ConvDecoder, DenseDiscriminator, ConvDiscriminator
 from salad.trainer import Trainer
 
 
 ##########################################################################################
 # Argparse
-##################################################### #####################################
+##########################################################################################
 def arg_parse():
     parser = argparse.ArgumentParser(description='SALAD: KPI Anomaly Detection')
 
@@ -78,25 +78,29 @@ def evaluate(model_trainer, data_loader, delay, mode='test'):
 
     y_score = []
     y_true = []
+    missing = []
 
     if mode == 'test':
         model_trainer.eval()
     for x, m, y in tqdm(data_loader):
         x = x.cuda()
 
-        x_rec = model_trainer.reconstruct(x)
-        rec_error = torch.abs(x_rec - x)[:, -1]
-        rec_error = rec_error.view(rec_error.size(0))
+        with torch.no_grad():
+            x_rec = model_trainer.reconstruct(x)
+            rec_error = torch.abs(x_rec - x)[:, -1]
+            rec_error = rec_error.view(rec_error.size(0))
 
         y_score.append(rec_error.detach().cpu().numpy())
         y_true.append(y[:, -1].numpy())
+        missing.append(m[:, -1].numpy())
 
     y_score = np.concatenate(y_score).astype(np.float32)
     y_true = np.concatenate(y_true).astype(np.int)
+    missing = np.concatenate(missing).astype(np.int)
 
-    f1 = best_f1_with_delay(y_score, y_true, delay=delay)
-    pr_auc = pr_auc_with_delay(y_score, y_true, delay=delay)
-    roc_auc = roc_auc_with_delay(y_score, y_true, delay=delay)
+    f1 = best_f1_with_delay(y_score, y_true, delay=delay, missing=missing)
+    pr_auc = pr_auc_with_delay(y_score, y_true, delay=delay, missing=missing)
+    roc_auc = roc_auc_with_delay(y_score, y_true, delay=delay, missing=missing)
 
     return f1, pr_auc, roc_auc
 
@@ -105,9 +109,13 @@ if __name__ == '__main__':
     # Argument parse
     args = arg_parse()
     print('Arguments parsed...')
-    print(pd.DataFrame(vars(args)).T)
+    args_dict = vars(args)
+    # for key, value in args_dict.items():
+    #     if isinstance(value, tuple):
+    #         args_dict[key] = str(value)
+    print(pd.DataFrame(args_dict).T)
 
-    wandb.init(project='SALAD', name='run_' + datetime.now().strftime('%Y-%m-%d_%H-%M'), group='kpi_%d'%(args.kpi_index))
+    wandb.init(project='SALAD', name='%s_contras-%d_itimp-%d_'%(args.variant, args.use_contrastive, args.in_train_imputation) + datetime.now().strftime('%Y-%m-%d_%H-%M'), group='kpi_%d'%(args.kpi_index))
     wandb.config.update(args)
 
     # GPU setting
@@ -153,13 +161,16 @@ if __name__ == '__main__':
     if args.variant == 'conv':
         encoder = ConvEncoder(args.window_size, 1, args.latent_size).cuda()
         decoder = ConvDecoder(args.window_size, 1, args.latent_size).cuda()
+        data_discriminator = ConvDiscriminator(args.window_size, 1).cuda()
+        # latent_discriminator = ConvDiscriminator(args.hidden_size, 1).cuda()
+        latent_discriminator = DenseDiscriminator(args.latent_size, args.hidden_size).cuda()
     elif args.variant == 'dense':
         encoder = DenseEncoder(args.window_size, args.hidden_size, args.latent_size).cuda()
         decoder = DenseDecoder(args.window_size, args.hidden_size, args.latent_size).cuda()
+        data_discriminator = DenseDiscriminator(args.window_size, args.hidden_size).cuda()
+        latent_discriminator = DenseDiscriminator(args.latent_size, args.hidden_size).cuda()
     else:
         raise ValueError('Invalid model variant!')
-    data_discriminator = DataDiscriminator(args.window_size, args.hidden_size).cuda()
-    latent_discriminator = LatentDiscriminator(args.hidden_size, args.latent_size).cuda()
 
     wandb.watch(encoder, log='all', idx=0)
     wandb.watch(decoder, log='all', idx=1)
@@ -286,7 +297,7 @@ if __name__ == '__main__':
     test_dataset = KPIDataset(test_data, window_size=args.window_size, return_missing=True, return_label=True)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, num_workers=4, shuffle=False, drop_last=False)
 
-    f1, pr_auc, roc_auc = evaluate(trainer, test_loader, delay=args.delay)
+    f1, pr_auc, roc_auc = evaluate(trainer, test_loader, delay=args.delay, mode='test')
     wandb.log({'test_f1': f1, 'test_pr_auc': pr_auc, 'test_roc_auc': roc_auc})
     print('F1:', f1)
     print('PR_AUC:', pr_auc)
