@@ -15,7 +15,7 @@ function usage() {
 }
 
 run_experiment() {
-  python3 run_baseline.py --data $1 --model $2 --label $3 --seed $4
+   ~/anaconda3/envs/pytorch/bin/python run_baseline.py --data $1 --model $2 --label $3 --seed $4
 }
 
 while getopts m:l:s:h OPT; do

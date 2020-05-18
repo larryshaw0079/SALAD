@@ -1,0 +1,29 @@
+authorName: mier
+experimentName: Yeast_alpha
+# 指定nni管理器ip 为53号服务器
+nniManagerIp: 172.31.246.46
+trialConcurrency: 2
+maxExecDuration: 50h
+#choice: local, remote, pai
+trainingServicePlatform: paiYarn
+searchSpacePath: params.json
+#choice: true, false
+useAnnotation: false
+#logLevel: info
+#logDir: /data/JingYizhen/code/nni_log/MLModel/
+tuner:
+  #choice: TPE, Random, Anneal, Evolution, BatchTuner, MetisTuner
+  #SMAC (SMAC should be installed through nnictl)
+  builtinTunerName: GridSearch
+trial:
+  command: python nni_trial.py
+  codeDir: .
+  gpuNum: 0
+  cpuNum: 2
+  memoryMB: 4096
+  image: lin-ai-27:5000/xiaoqinfeng/universe
+paiYarnConfig:
+  userName: XiaoQinfeng
+  # 密码如果是全数字需要 ""
+  passWord: "nuchanzawa"
+  host: 172.31.246.52

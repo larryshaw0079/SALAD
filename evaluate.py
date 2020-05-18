@@ -4,14 +4,14 @@ import os
 import numpy as np
 import torch
 import torch.nn as nn
-from salad.dataset import prepare_dataset, KPIBatchedWindowDataset
-from salad.metrics import modified_f1, modified_recall, modified_precision
 from sklearn.metrics import precision_recall_curve, roc_auc_score, auc
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from salad.dataset import prepare_dataset, KPIBatchedWindowDataset
+from salad.metrics import modified_f1, modified_recall, modified_precision
 from salad.misc import print_blue_info
-from salad.net import DenseEncoder, DenseDecoder, ConvEncoder, ConvDecoder, DataDiscriminator, LatentDiscriminator
+from salad.model import DenseEncoder, DenseDecoder, ConvEncoder, ConvDecoder, DataDiscriminator, LatentDiscriminator
 from salad.trainer import Trainer
 
 

@@ -1,0 +1,4 @@
+{
+  "a": {"_type": "choice", "_value": [1, 2, 3]},
+  "b": {"_type": "choice", "_value": [4, 5, 6]}
+}

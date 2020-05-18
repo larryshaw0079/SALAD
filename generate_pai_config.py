@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import uuid
 
 import yaml
 
@@ -17,7 +18,7 @@ data_files = ['series_0_05f10d3a-239c-3bef-9bdc-a2feeb0037aa.csv',
               'series_6_431a8542-c468-3988-a508-3afd06a218da.csv',
               'series_7_4d2af31a-9916-3d9f-8a8e-8a268a48c095.csv',
               'series_8_54350a12-7a9d-3ca8-b81f-f886b9d156fd.csv',
-              'series_9_55f8b8b8-b659-38df-b3df-e4a5a8a54bc9.csv'
+              'series_9_55f8b8b8-b659-38df-b3df-e4a5a8a54bc9.csv',
               'series_10_57051487-3a40-3828-9084-a12f7f23ee38.csv',
               'series_11_6a757df4-95e5-3357-8406-165e2bd49360.csv',
               'series_12_6d1114ae-be04-3c46-b5aa-be1a003a57cd.csv',
@@ -43,7 +44,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", default=0, type=int, nargs='+')
     parser.add_argument("--seed", default=[2016, 2017, 2018, 2019, 2020], type=int, nargs='+')
-    parser.add_argument("--label", default=[0.0, 0.1, 1.0], type=float, nargs='+')
+    parser.add_argument("--label", default=[0.0, 0.1], type=float, nargs='+')
+    parser.add_argument("--contras", action='store_true')
+    parser.add_argument("--itimp", action='store_true')
     parser.add_argument("--cpu", default=4, type=int)
     parser.add_argument("--gpu", default=1, type=int)
     parser.add_argument("--ram", default=8192, type=int)
@@ -66,25 +69,43 @@ if __name__ == '__main__':
                 with open('docker/template.yaml', 'r') as f:
                     content = yaml.load(f, Loader=Loader)
 
-                content['name'] = 'XiaoQinfeng_SALAD_CONV_S%d_LABEL%s_SEED%d_%s' % (
-                    data, str(label)[0:3:2], seed, current_time)
+                content['name'] = 'SALAD_S%d_CONTRAS%d_ITIMP%d_LABEL%s_SEED%d_%s_%s' % (
+                    data, int(args.contras), int(args.itimp), str(label)[0:3:2], seed, current_time, str(uuid.uuid4()))
                 print(content['name'])
                 content['taskRoles']['Task_role_1']['resourcePerInstance']['gpu'] = args.gpu
                 content['taskRoles']['Task_role_1']['resourcePerInstance']['cpu'] = args.cpu
                 content['taskRoles']['Task_role_1']['resourcePerInstance']['memoryMB'] = args.ram
 
-                content['taskRoles']['Task_role_1']['commands'].append(r'wget http://172.31.246.46:9999/data.tar')
-                content['taskRoles']['Task_role_1']['commands'].append(r'wget http://172.31.246.46:9999/script.tar')
+                content['taskRoles']['Task_role_1']['commands'].append(r'wget http://172.31.246.46:10099/data.tar')
+                content['taskRoles']['Task_role_1']['commands'].append(r'wget http://172.31.246.46:10099/script.tar')
                 content['taskRoles']['Task_role_1']['commands'].append(r'tar -xf data.tar')
                 content['taskRoles']['Task_role_1']['commands'].append(r'tar -xf script.tar')
 
-                content['taskRoles']['Task_role_1']['commands'].append(
-                    r'python3 train.py --category kpi --epochs 150 --batch 512 --contras --itimp --var conv --data %s --label-portion %f --seed %d' % (
-                        data_file_name, label, seed))
-                for load_epoch in [150, 140, 130, 120, 110, 100, 90, 80, 70, 60, 50]:
-                    content['taskRoles']['Task_role_1']['commands'].append(
-                        r'python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data %s --load %d --label-portion %f --delay 7 --seed %d' % (
-                            data_file_name, load_epoch, label, seed))
+                # content['taskRoles']['Task_role_1']['commands'].append('wandb login 675ccc68c4be201b93366e640cbdd1c23aa74664')
+
+                if args.contras:
+                    if args.itimp:
+                        content['taskRoles']['Task_role_1']['commands'].append(
+                            r'python main.py --category kpi --epochs 150 --batch 512 --contras --itimp --var conv --data %s --label-portion %f --seed %d' % (
+                                data_file_name, label, seed))
+                    else:
+                        content['taskRoles']['Task_role_1']['commands'].append(
+                            r'python main.py --category kpi --epochs 150 --batch 512 --contras --var conv --data %s --label-portion %f --seed %d' % (
+                                data_file_name, label, seed))
+                else:
+                    if args.itimp:
+                        content['taskRoles']['Task_role_1']['commands'].append(
+                            r'python main.py --category kpi --epochs 150 --batch 512 --itimp --var conv --data %s --label-portion %f --seed %d' % (
+                                data_file_name, label, seed))
+                    else:
+                        content['taskRoles']['Task_role_1']['commands'].append(
+                            r'python main.py --category kpi --epochs 150 --batch 512 --var conv --data %s --label-portion %f --seed %d' % (
+                                data_file_name, label, seed))
+
+                # for load_epoch in [150, 140, 130, 120, 110, 100, 90, 80, 70, 60, 50]:
+                #     content['taskRoles']['Task_role_1']['commands'].append(
+                #         r'python3 evaluate.py --category kpi --epochs 150 --batch 512 --var conv --data %s --load %d --label-portion %f --delay 7 --seed %d' % (
+                #             data_file_name, load_epoch, label, seed))
 
                 with open('docker/%s.yaml' % (content['name']), 'w') as f:
                     output = yaml.dump(content, f, Dumper=Dumper)
